@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import type { Message } from "@/lib/supabase/types";
 
-const STORAGE_KEY = "vet-chat-conversation-id";
 const POLL_INTERVAL_MS = 4000;
 
 interface MessagesResponse {
@@ -17,13 +16,9 @@ interface MessagesResponse {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ChatWidget({ showHeader = true }: { showHeader?: boolean }) {
-  // Reads whatever conversation this browser already started, if any — a
-  // page refresh shouldn't lose an in-progress (possibly escalated,
-  // possibly-still-waiting) conversation. A lazy useState initializer (rather
-  // than an effect) keeps this a plain synchronous read with no extra render.
-  const [conversationId, setConversationId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : window.localStorage.getItem(STORAGE_KEY)
-  );
+  // Deliberately not persisted (e.g. localStorage) — every page load starts
+  // a brand new conversation.
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +60,6 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         const created = await res.json();
         convId = created.id;
         setConversationId(convId);
-        window.localStorage.setItem(STORAGE_KEY, convId!);
       }
 
       const res = await fetch(`/api/conversations/${convId}/messages`, {

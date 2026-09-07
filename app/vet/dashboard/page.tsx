@@ -101,7 +101,7 @@ export default function VetDashboardPage() {
   if (sessionLoading || !session) return null;
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6">
       <h1 className="mb-1 text-xl font-semibold">Vet Queue</h1>
       <p className="mb-6 text-sm text-gray-500">
         Conversations waiting on a vet, urgent cases first.
@@ -121,22 +121,22 @@ export default function VetDashboardPage() {
             <li key={row.id}>
               <Link
                 href={`/vet/dashboard/${row.id}`}
-                className={`flex items-center justify-between rounded-md border px-4 py-3 text-sm hover:bg-gray-50 ${
+                className={`flex flex-col gap-1 rounded-md border px-4 py-3 text-sm hover:bg-gray-50 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${
                   row.urgency === "urgent" ? "border-red-300 bg-red-50" : ""
                 }`}
               >
                 <div>
-                  <div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">
                       {row.customer_name || "Anonymous customer"}
                     </span>
                     {row.urgency === "urgent" && (
-                      <span className="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                      <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
                         Urgent
                       </span>
                     )}
                     {awaitingVet && (
-                      <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-blue-800">
+                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-blue-800">
                         New
                       </span>
                     )}
@@ -147,7 +147,7 @@ export default function VetDashboardPage() {
                     </p>
                   )}
                 </div>
-                <span className="text-xs text-gray-400">
+                <span className="shrink-0 text-xs text-gray-400">
                   waiting since {new Date(row.updated_at).toLocaleString()}
                 </span>
               </Link>

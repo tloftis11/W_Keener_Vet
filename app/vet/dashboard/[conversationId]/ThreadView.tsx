@@ -121,8 +121,8 @@ export default function ThreadView({ conversationId }: { conversationId: string 
   if (sessionLoading || !session) return null;
 
   return (
-    <div className="mx-auto flex h-screen w-full max-w-2xl flex-col p-4">
-      <div className="flex items-center justify-between border-b pb-3">
+    <div className="mx-auto flex h-screen w-full max-w-2xl flex-col p-3 sm:p-4">
+      <div className="flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link href="/vet/dashboard" className="text-xs text-gray-400 hover:underline">
             ← Back to queue
@@ -144,7 +144,7 @@ export default function ThreadView({ conversationId }: { conversationId: string 
         {conversation?.status !== "resolved" && (
           <button
             onClick={handleResolve}
-            className="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-gray-50"
+            className="self-start rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-gray-50 sm:self-auto"
           >
             Mark resolved
           </button>
