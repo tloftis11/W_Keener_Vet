@@ -184,7 +184,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
   const { data: conversation, error: convError } = await supabase
     .from("conversations")
-    .select("status, urgency")
+    .select("status, urgency, customer_name, customer_contact")
     .eq("id", conversationId)
     .single();
 
@@ -212,5 +212,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     messages,
     status: conversation.status,
     urgency: conversation.urgency,
+    customerName: conversation.customer_name,
+    customerContact: conversation.customer_contact,
   });
 }

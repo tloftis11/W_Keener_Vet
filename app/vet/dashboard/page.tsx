@@ -126,18 +126,25 @@ export default function VetDashboardPage() {
                 }`}
               >
                 <div>
-                  <span className="font-medium">
-                    {row.customer_name || "Anonymous customer"}
-                  </span>
-                  {row.urgency === "urgent" && (
-                    <span className="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
-                      Urgent
+                  <div>
+                    <span className="font-medium">
+                      {row.customer_name || "Anonymous customer"}
                     </span>
-                  )}
-                  {awaitingVet && (
-                    <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-blue-800">
-                      New
-                    </span>
+                    {row.urgency === "urgent" && (
+                      <span className="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+                        Urgent
+                      </span>
+                    )}
+                    {awaitingVet && (
+                      <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-blue-800">
+                        New
+                      </span>
+                    )}
+                  </div>
+                  {!row.customer_contact && (
+                    <p className="mt-0.5 text-[11px] italic text-gray-400">
+                      No contact info on file
+                    </p>
                   )}
                 </div>
                 <span className="text-xs text-gray-400">

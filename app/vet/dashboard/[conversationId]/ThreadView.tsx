@@ -130,8 +130,13 @@ export default function ThreadView({ conversationId }: { conversationId: string 
           <h1 className="text-lg font-semibold">
             {conversation?.customer_name || "Anonymous customer"}
           </h1>
+          <p
+            className={`text-xs ${conversation?.customer_contact ? "text-gray-600" : "italic text-gray-400"}`}
+          >
+            {conversation?.customer_contact || "No contact info provided"}
+          </p>
           {conversation?.urgency === "urgent" && (
-            <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+            <span className="mt-1 inline-block rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
               Urgent
             </span>
           )}
