@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: vet-clinic-chatbot
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLASSIFIER_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: CHAT_MODEL
+        value: claude-opus-5
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
