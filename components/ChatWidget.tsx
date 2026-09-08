@@ -28,6 +28,10 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   const [error, setError] = useState<string | null>(null);
   const [responseMode, setResponseMode] = useState<ResponseMode>(DEFAULT_RESPONSE_MODE);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Guards against a duplicate send: `sending` state updates are async, so two
+  // rapid Enter presses/clicks can both read it as false before a re-render.
+  // A ref is checked/set synchronously within the same call, closing that gap.
+  const sendingRef = useRef(false);
 
   const [contactDismissed, setContactDismissed] = useState(false);
   const [contactName, setContactName] = useState("");
@@ -38,7 +42,11 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   const { data, mutate } = useSWR<MessagesResponse>(
     conversationId ? `/api/conversations/${conversationId}/messages` : null,
     fetcher,
-    { refreshInterval: POLL_INTERVAL_MS }
+    // Paused while a send is in flight — otherwise a periodic poll can land
+    // mid-request and show the persisted reply while the local "thinking"
+    // bubble (cleared separately, once handleSend's own await resolves) is
+    // still on screen, briefly rendering the exchange twice.
+    { refreshInterval: sending ? 0 : POLL_INTERVAL_MS }
   );
 
   const messages = data?.messages ?? [];
@@ -51,7 +59,8 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
 
   async function handleSend() {
     const text = input.trim();
-    if (!text || sending) return;
+    if (!text || sendingRef.current) return;
+    sendingRef.current = true;
 
     setSending(true);
     setPendingText(text);
@@ -82,6 +91,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
+      sendingRef.current = false;
       setSending(false);
       setPendingText(null);
     }

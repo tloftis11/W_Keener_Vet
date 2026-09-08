@@ -3,7 +3,7 @@
 // only safely import types, not anything that pulls in the Anthropic SDK.
 export const RESPONSE_MODES = ["simple", "detailed"] as const;
 export type ResponseMode = (typeof RESPONSE_MODES)[number];
-export const DEFAULT_RESPONSE_MODE: ResponseMode = "simple";
+export const DEFAULT_RESPONSE_MODE: ResponseMode = "detailed";
 
 export function parseResponseMode(value: unknown): ResponseMode {
   return RESPONSE_MODES.includes(value as ResponseMode)
