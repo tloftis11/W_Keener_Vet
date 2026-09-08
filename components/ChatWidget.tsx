@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Message } from "@/lib/supabase/types";
+import { DEFAULT_RESPONSE_MODE, type ResponseMode } from "@/lib/claude/mode";
 
 const POLL_INTERVAL_MS = 4000;
 
@@ -21,7 +24,9 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [pendingText, setPendingText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [responseMode, setResponseMode] = useState<ResponseMode>(DEFAULT_RESPONSE_MODE);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const [contactDismissed, setContactDismissed] = useState(false);
@@ -42,13 +47,14 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [messages.length, pendingText]);
 
   async function handleSend() {
     const text = input.trim();
     if (!text || sending) return;
 
     setSending(true);
+    setPendingText(text);
     setError(null);
     setInput("");
 
@@ -65,7 +71,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
       const res = await fetch(`/api/conversations/${convId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, mode: responseMode }),
       });
       if (!res.ok) throw new Error("Message failed to send");
 
@@ -77,6 +83,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSending(false);
+      setPendingText(null);
     }
   }
 
@@ -111,6 +118,28 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
           </p>
         </header>
       )}
+
+      <div className="flex items-center gap-2 border-b py-2.5">
+        <span className="text-xs text-gray-500">Reply style:</span>
+        <div className="flex rounded-full border border-gray-200 p-0.5 text-xs">
+          <button
+            onClick={() => setResponseMode("simple")}
+            className={`rounded-full px-2.5 py-1 font-medium transition ${
+              responseMode === "simple" ? "bg-gray-900 text-white" : "text-gray-500"
+            }`}
+          >
+            Simple
+          </button>
+          <button
+            onClick={() => setResponseMode("detailed")}
+            className={`rounded-full px-2.5 py-1 font-medium transition ${
+              responseMode === "detailed" ? "bg-gray-900 text-white" : "text-gray-500"
+            }`}
+          >
+            Detailed
+          </button>
+        </div>
+      </div>
 
       {status === "escalated" && (
         <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -161,6 +190,21 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} />
         ))}
+        {pendingText && (
+          <>
+            <MessageBubble
+              message={{
+                id: "pending-customer",
+                conversation_id: conversationId ?? "",
+                sender_type: "customer",
+                sender_id: null,
+                body: pendingText,
+                created_at: new Date().toISOString(),
+              }}
+            />
+            <ThinkingBubble />
+          </>
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -191,6 +235,21 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   );
 }
 
+function ThinkingBubble() {
+  return (
+    <div className="flex justify-start" aria-live="polite" aria-label="Assistant is typing">
+      <div className="max-w-[80%] rounded-lg bg-gray-100 px-3 py-2.5 text-sm text-gray-900">
+        <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">Assistant</div>
+        <div className="flex gap-1 py-1">
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({ message }: { message: Message }) {
   if (message.sender_type === "system") {
     return (
@@ -201,6 +260,7 @@ function MessageBubble({ message }: { message: Message }) {
   }
 
   const isCustomer = message.sender_type === "customer";
+  const isBot = message.sender_type === "bot";
   const label = message.sender_type === "vet" ? "Vet" : isCustomer ? "You" : "Assistant";
 
   return (
@@ -217,7 +277,13 @@ function MessageBubble({ message }: { message: Message }) {
         <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">
           {label}
         </div>
-        <div className="whitespace-pre-wrap">{message.body}</div>
+        {isBot ? (
+          <div className="prose-chat">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.body}</ReactMarkdown>
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap">{message.body}</div>
+        )}
       </div>
     </div>
   );

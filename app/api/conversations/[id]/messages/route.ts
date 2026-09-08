@@ -4,6 +4,7 @@ import { classifyConversation } from "@/lib/claude/classifier";
 import { generateChatReply } from "@/lib/claude/chat";
 import { getHardGateMessage, EMERGENCY_FOLLOW_UP_NOTE } from "@/lib/claude/acknowledgments";
 import { getClassifierModel } from "@/lib/claude/models";
+import { parseResponseMode } from "@/lib/claude/mode";
 import type { Message } from "@/lib/supabase/types";
 
 interface RouteParams {
@@ -14,6 +15,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { id: conversationId } = await params;
   const body = await req.json().catch(() => ({}));
   const text: string | undefined = body?.text;
+  const mode = parseResponseMode(body?.mode);
 
   if (!text || !text.trim()) {
     return NextResponse.json({ error: "Message text is required" }, { status: 400 });
@@ -103,7 +105,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // way, but the customer shouldn't be left waiting with nothing, so the
     // bot still responds (with urgent-care framing) alongside the hand-off.
     if (category === "emergency") {
-      const replyText = await generateChatReply(history, { ...triage, category });
+      const replyText = await generateChatReply(history, { triage: { ...triage, category }, mode });
       const { data: botMessage, error: botError } = await supabase
         .from("messages")
         .insert({ conversation_id: conversationId, sender_type: "bot", body: replyText })
@@ -153,7 +155,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ messages: newMessages, status: "escalated" });
   }
 
-  const replyText = await generateChatReply(history);
+  const replyText = await generateChatReply(history, { mode });
 
   const { data: botMessage, error: botError } = await supabase
     .from("messages")
