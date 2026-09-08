@@ -6,12 +6,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "@/lib/supabase/types";
 import { DEFAULT_RESPONSE_MODE, type ResponseMode } from "@/lib/claude/mode";
+import AutoGrowTextarea from "@/components/AutoGrowTextarea";
 
 const POLL_INTERVAL_MS = 4000;
 
 interface MessagesResponse {
   messages: Message[];
   status: "active" | "escalated" | "resolved";
+  urgency: "routine" | "urgent" | null;
   customerName: string | null;
   customerContact: string | null;
 }
@@ -51,6 +53,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
 
   const messages = data?.messages ?? [];
   const status = data?.status ?? "active";
+  const urgency = data?.urgency ?? null;
   const needsContact = status === "escalated" && !data?.customerContact && !contactDismissed;
 
   // The server saves the customer's message immediately, well before the
@@ -128,33 +131,37 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
     }
   }
 
+  const showGreeting = messages.length === 0 && !pendingText;
+
   return (
     <div className="flex h-full w-full flex-col">
       {showHeader && (
-        <header className="border-b pb-3">
-          <h1 className="text-xl font-semibold">Ask Us About Your Pet</h1>
-          <p className="text-sm text-gray-500">
+        <header className="border-b border-line pb-3">
+          <h1 className="font-display text-xl text-ink">Ask Us About Your Pet</h1>
+          <p className="text-sm text-ink-soft">
             Describe what&apos;s going on — we&apos;ll help where we can, and loop in a vet
             for anything that needs their judgment.
           </p>
         </header>
       )}
 
-      <div className="flex items-center gap-2 border-b py-2.5">
-        <span className="text-xs text-gray-500">Reply style:</span>
-        <div className="flex rounded-full border border-gray-200 p-0.5 text-xs">
+      <div className="flex items-center gap-2 border-b border-line py-2.5">
+        <span className="text-xs text-ink-faint">Reply style:</span>
+        <div className="flex rounded-full border border-line p-0.5 text-xs">
           <button
             onClick={() => setResponseMode("simple")}
+            aria-pressed={responseMode === "simple"}
             className={`rounded-full px-2.5 py-1 font-medium transition ${
-              responseMode === "simple" ? "bg-gray-900 text-white" : "text-gray-500"
+              responseMode === "simple" ? "bg-accent text-white" : "text-ink-soft"
             }`}
           >
             Simple
           </button>
           <button
             onClick={() => setResponseMode("detailed")}
+            aria-pressed={responseMode === "detailed"}
             className={`rounded-full px-2.5 py-1 font-medium transition ${
-              responseMode === "detailed" ? "bg-gray-900 text-white" : "text-gray-500"
+              responseMode === "detailed" ? "bg-accent text-white" : "text-ink-soft"
             }`}
           >
             Detailed
@@ -162,28 +169,44 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         </div>
       </div>
 
-      {status === "escalated" && (
-        <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          A vet has been notified about this conversation and will reply here as soon
-          as they can. Feel free to keep adding details.
+      {status === "escalated" &&
+        (urgency === "urgent" ? (
+          <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+            <span className="font-semibold">This has been flagged as urgent</span> — a vet
+            has been notified right away and will reply here as soon as possible. If things
+            seem to be getting worse, please call us or head to your nearest emergency vet.
+          </div>
+        ) : (
+          <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            A vet has been notified about this conversation and will reply here as soon
+            as they can. Feel free to keep adding details.
+          </div>
+        ))}
+
+      {status === "resolved" && (
+        <div className="mt-3 rounded-md border border-line bg-accent-soft px-3 py-2 text-sm text-accent-dark">
+          This conversation was marked resolved. Send a message below if you have a new
+          question or this comes back.
         </div>
       )}
 
       {needsContact && (
         <div className="mt-3 space-y-2 rounded-md border border-amber-200 bg-amber-50/60 p-3">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-sm font-medium text-ink">
             How can a vet reach you if you step away from this chat?
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
-              className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
+              className="flex-1 rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               placeholder="Your name"
+              aria-label="Your name"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
             />
             <input
-              className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
+              className="flex-1 rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               placeholder="Phone or email"
+              aria-label="Phone or email"
               value={contactValue}
               onChange={(e) => setContactValue(e.target.value)}
             />
@@ -193,13 +216,13 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
             <button
               onClick={handleSaveContact}
               disabled={contactSaving || !contactValue.trim()}
-              className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+              className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-accent-dark disabled:opacity-40"
             >
               {contactSaving ? "Saving..." : "Share contact info"}
             </button>
             <button
               onClick={() => setContactDismissed(true)}
-              className="text-xs text-gray-500 hover:underline"
+              className="text-xs text-ink-faint hover:text-ink hover:underline"
             >
               Skip for now
             </button>
@@ -207,7 +230,23 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         </div>
       )}
 
-      <div className="flex-1 space-y-3 overflow-y-auto py-4">
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation"
+        className="flex-1 space-y-3 overflow-y-auto py-4"
+      >
+        {showGreeting && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg bg-accent-soft px-3 py-2 text-sm text-ink">
+              <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">
+                Assistant
+              </div>
+              Hi! Tell me what&apos;s going on with your pet, or ask about hours, services,
+              or anything else — I&apos;m happy to help.
+            </div>
+          </div>
+        )}
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} />
         ))}
@@ -233,23 +272,19 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
 
       {error && <p className="pb-2 text-sm text-red-600">{error}</p>}
 
-      <div className="flex gap-2 border-t pt-3">
-        <input
-          className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:border-gray-400"
-          placeholder="Type a message..."
+      <div className="flex gap-2 border-t border-line pt-3">
+        <AutoGrowTextarea
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
+          onChange={setInput}
+          onSubmit={handleSend}
+          placeholder="Type a message..."
+          ariaLabel="Type a message"
+          className="flex-1 rounded-md border border-line px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent"
         />
         <button
           onClick={handleSend}
           disabled={sending || !input.trim()}
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+          className="self-end rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-dark disabled:opacity-40"
         >
           Send
         </button>
@@ -260,13 +295,13 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
 
 function ThinkingBubble() {
   return (
-    <div className="flex justify-start" aria-live="polite" aria-label="Assistant is typing">
-      <div className="max-w-[80%] rounded-lg bg-gray-100 px-3 py-2.5 text-sm text-gray-900">
+    <div className="flex justify-start" aria-label="Assistant is typing">
+      <div className="max-w-[80%] rounded-lg bg-accent-soft px-3 py-2.5 text-sm text-ink">
         <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">Assistant</div>
         <div className="flex gap-1 py-1">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/60 [animation-delay:-0.3s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/60 [animation-delay:-0.15s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/60" />
         </div>
       </div>
     </div>
@@ -291,10 +326,10 @@ function MessageBubble({ message }: { message: Message }) {
       <div
         className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
           isCustomer
-            ? "bg-gray-900 text-white"
+            ? "bg-accent text-white"
             : message.sender_type === "vet"
-              ? "bg-emerald-50 text-emerald-900"
-              : "bg-gray-100 text-gray-900"
+              ? "bg-ink text-white"
+              : "bg-accent-soft text-ink"
         }`}
       >
         <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">

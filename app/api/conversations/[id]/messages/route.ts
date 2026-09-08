@@ -52,11 +52,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   const newMessages: Message[] = [customerMessage];
 
-  // Once a conversation has been escalated or resolved, this becomes a
-  // human-only channel — the customer can keep adding messages, but no
-  // classifier or chat model call runs. A vet will see the new message
-  // whenever they next open the thread.
-  if (conversation.status !== "active") {
+  // Once escalated, this becomes a human-only channel — a vet is (or will
+  // be) actively looking at it, so the bot shouldn't jump back in over them.
+  // A *resolved* conversation is different: nobody's watching it anymore, so
+  // a new customer message reopens it — falling through to the normal
+  // classify-and-respond flow below, same as a brand new conversation.
+  if (conversation.status === "escalated") {
     return NextResponse.json({ messages: newMessages, status: conversation.status });
   }
 
@@ -172,6 +173,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       { error: botError?.message ?? "Failed to save bot reply" },
       { status: 500 }
     );
+  }
+
+  // Explicit write (not just a no-op for already-active conversations) so a
+  // previously-resolved conversation is actually reopened in the DB, not
+  // just labeled "active" in this one response.
+  if (conversation.status !== "active") {
+    await supabase.from("conversations").update({ status: "active" }).eq("id", conversationId);
   }
 
   newMessages.push(botMessage);
