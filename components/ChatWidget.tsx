@@ -53,6 +53,17 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   const status = data?.status ?? "active";
   const needsContact = status === "escalated" && !data?.customerContact && !contactDismissed;
 
+  // The server saves the customer's message immediately, well before the
+  // (slow) classifier + chat calls finish — so a poll can land mid-request
+  // and show it via `messages` while the local echo bubble below is still
+  // up too. Rather than race that timing, just don't render the echo once
+  // the real thing has shown up.
+  const lastMessage = messages[messages.length - 1];
+  const pendingAlreadyPersisted =
+    !!pendingText &&
+    lastMessage?.sender_type === "customer" &&
+    lastMessage.body === pendingText;
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, pendingText]);
@@ -202,16 +213,18 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         ))}
         {pendingText && (
           <>
-            <MessageBubble
-              message={{
-                id: "pending-customer",
-                conversation_id: conversationId ?? "",
-                sender_type: "customer",
-                sender_id: null,
-                body: pendingText,
-                created_at: new Date().toISOString(),
-              }}
-            />
+            {!pendingAlreadyPersisted && (
+              <MessageBubble
+                message={{
+                  id: "pending-customer",
+                  conversation_id: conversationId ?? "",
+                  sender_type: "customer",
+                  sender_id: null,
+                  body: pendingText,
+                  created_at: new Date().toISOString(),
+                }}
+              />
+            )}
             <ThinkingBubble />
           </>
         )}
