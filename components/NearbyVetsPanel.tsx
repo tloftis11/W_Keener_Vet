@@ -82,7 +82,7 @@ export default function NearbyVetsPanel({
       <div
         role="dialog"
         aria-label={isEmergency ? "Nearest emergency vets" : "Nearby vet clinics"}
-        className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col bg-surface p-4 shadow-lg"
+        className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col bg-surface p-4 shadow-lg md:max-w-md lg:max-w-xl"
       >
         <div className="flex items-center justify-between border-b border-line pb-3">
           <h2 className="font-display text-lg text-ink">
@@ -107,7 +107,7 @@ export default function NearbyVetsPanel({
                 ← Back to results
               </button>
               <p className="font-medium text-ink">{selectedVet.name}</p>
-              <p className="text-xs text-ink-faint">
+              <p className="font-mono text-xs tabular-nums text-ink-faint">
                 {kmToMiles(selectedVet.distanceKm).toFixed(1)} mi away
               </p>
               {selectedVet.address && (
@@ -264,7 +264,7 @@ export default function NearbyVetsPanel({
                       className="cursor-pointer rounded-md border border-line p-3 hover:bg-accent-soft/40"
                     >
                       <p className="font-medium text-ink">{vet.name}</p>
-                      <p className="text-xs text-ink-faint">
+                      <p className="font-mono text-xs tabular-nums text-ink-faint">
                         {kmToMiles(vet.distanceKm).toFixed(1)} mi away
                       </p>
                       {vet.address && (

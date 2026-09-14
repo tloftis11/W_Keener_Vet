@@ -8,6 +8,8 @@ import type { Message } from "@/lib/supabase/types";
 import { DEFAULT_RESPONSE_MODE, type ResponseMode } from "@/lib/claude/mode";
 import AutoGrowTextarea from "@/components/AutoGrowTextarea";
 import NearbyVetsPanel from "@/components/NearbyVetsPanel";
+import HowItWorksModal from "@/components/HowItWorksModal";
+import { AiMarker, PersonMarker } from "@/components/SenderMarkers";
 import type { VetResult } from "@/lib/geo/geoapify";
 
 const POLL_INTERVAL_MS = 4000;
@@ -25,14 +27,24 @@ interface MessagesResponse {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ChatWidget({ showHeader = true }: { showHeader?: boolean }) {
-  // Deliberately not persisted (e.g. localStorage) — every page load starts
-  // a brand new conversation.
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  // Resumable via URL (?c=<id>), written into the address bar the moment a
+  // conversation is created — not localStorage, so it's shareable/bookmarkable
+  // rather than tied to one browser. Anyone with the link can open it, same
+  // trust model as any unlisted-link document; the API already accepted any
+  // conversation id with no auth check, this just makes that id visible
+  // rather than only held in memory. Visiting the bare URL still starts fresh.
+  const [conversationId, setConversationId] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("c")
+  );
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [pendingText, setPendingText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [responseMode, setResponseMode] = useState<ResponseMode>(DEFAULT_RESPONSE_MODE);
+  const [showModeInfo, setShowModeInfo] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   // Guards against a duplicate send: `sending` state updates are async, so two
   // rapid Enter presses/clicks can both read it as false before a re-render.
@@ -169,6 +181,9 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         const created = await res.json();
         convId = created.id;
         setConversationId(convId);
+        const url = new URL(window.location.href);
+        url.searchParams.set("c", convId!);
+        window.history.replaceState(null, "", url);
       }
 
       const res = await fetch(`/api/conversations/${convId}/messages`, {
@@ -225,28 +240,52 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         </header>
       )}
 
-      <div className="flex items-center gap-2 border-b border-line py-2.5">
-        <span className="text-xs text-ink-faint">Reply style:</span>
-        <div className="flex rounded-full border border-line p-0.5 text-xs">
+      <div className="sticky top-0 z-10 bg-surface">
+        <div className="flex items-center gap-2 border-b border-line py-2.5">
+          <span className="text-xs text-ink-faint">Reply style:</span>
+          <div className="flex rounded-full border border-line p-0.5 text-xs">
+            <button
+              onClick={() => setResponseMode("detailed")}
+              aria-pressed={responseMode === "detailed"}
+              className={`rounded-full px-2.5 py-1 font-medium transition ${
+                responseMode === "detailed" ? "bg-accent text-white" : "text-ink-soft"
+              }`}
+            >
+              Detailed
+            </button>
+            <button
+              onClick={() => setResponseMode("simple")}
+              aria-pressed={responseMode === "simple"}
+              className={`rounded-full px-2.5 py-1 font-medium transition ${
+                responseMode === "simple" ? "bg-accent text-white" : "text-ink-soft"
+              }`}
+            >
+              Simple
+            </button>
+          </div>
           <button
-            onClick={() => setResponseMode("simple")}
-            aria-pressed={responseMode === "simple"}
-            className={`rounded-full px-2.5 py-1 font-medium transition ${
-              responseMode === "simple" ? "bg-accent text-white" : "text-ink-soft"
-            }`}
+            onClick={() => setShowModeInfo((v) => !v)}
+            aria-label="What do these mean?"
+            aria-expanded={showModeInfo}
+            className="flex h-4 w-4 items-center justify-center rounded-full border border-line text-[10px] text-ink-faint hover:border-accent hover:text-accent"
           >
-            Simple
+            i
           </button>
           <button
-            onClick={() => setResponseMode("detailed")}
-            aria-pressed={responseMode === "detailed"}
-            className={`rounded-full px-2.5 py-1 font-medium transition ${
-              responseMode === "detailed" ? "bg-accent text-white" : "text-ink-soft"
-            }`}
+            onClick={() => setShowHowItWorks(true)}
+            className="ml-auto text-xs text-ink-faint hover:text-ink hover:underline"
           >
-            Detailed
+            How this works
           </button>
         </div>
+        {showModeInfo && (
+          <p className="border-b border-line bg-accent-soft/40 px-0.5 py-2 text-xs text-ink-soft">
+            <strong className="font-medium text-ink">Detailed</strong> gives fuller
+            explanations and asks follow-up questions.{" "}
+            <strong className="font-medium text-ink">Simple</strong> keeps answers short
+            and plain — good if longer responses are hard to read.
+          </p>
+        )}
       </div>
 
       {status === "escalated" &&
@@ -262,6 +301,12 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
             as they can. Feel free to keep adding details.
           </div>
         ))}
+
+      {status === "escalated" && (
+        <p className="mt-1.5 text-[11px] text-ink-faint">
+          This conversation is saved at this page&apos;s link — bookmark it to come back.
+        </p>
+      )}
 
       {status === "escalated" &&
         escalationCategory &&
@@ -331,7 +376,8 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         {showGreeting && (
           <div className="flex justify-start">
             <div className="max-w-[80%] rounded-lg bg-accent-soft px-3 py-2 text-sm text-ink">
-              <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">
+              <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide opacity-60">
+                <AiMarker className="h-2.5 w-2.5" />
                 Assistant
               </div>
               Hi! Tell me what&apos;s going on with your pet, or ask about hours, services,
@@ -395,6 +441,8 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
           onLocationSubmit={handleLocationSubmit}
         />
       )}
+
+      {showHowItWorks && <HowItWorksModal onClose={() => setShowHowItWorks(false)} />}
     </div>
   );
 }
@@ -403,7 +451,10 @@ function ThinkingBubble() {
   return (
     <div className="flex justify-start" aria-label="Assistant is typing">
       <div className="max-w-[80%] rounded-lg bg-accent-soft px-3 py-2.5 text-sm text-ink">
-        <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">Assistant</div>
+        <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide opacity-60">
+          <AiMarker className="h-2.5 w-2.5" />
+          Assistant
+        </div>
         <div className="flex gap-1 py-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/60 [animation-delay:-0.3s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/60 [animation-delay:-0.15s]" />
@@ -438,7 +489,9 @@ function MessageBubble({ message }: { message: Message }) {
               : "bg-accent-soft text-ink"
         }`}
       >
-        <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">
+        <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide opacity-60">
+          {isBot && <AiMarker className="h-2.5 w-2.5" />}
+          {message.sender_type === "vet" && <PersonMarker className="h-2.5 w-2.5" />}
           {label}
         </div>
         {isBot ? (

@@ -24,6 +24,7 @@
   --color-line: var(--color-line);
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
 body {

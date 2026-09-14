@@ -8,6 +8,7 @@ import { getBrowserClient } from "@/lib/supabase/client";
 import { useVetSession } from "@/lib/supabase/useVetSession";
 import VetTopBar from "@/components/vet/VetTopBar";
 import AutoGrowTextarea from "@/components/AutoGrowTextarea";
+import { AiMarker, PersonMarker } from "@/components/SenderMarkers";
 import type { Conversation, Message } from "@/lib/supabase/types";
 
 interface LatestEscalation {
@@ -185,7 +186,7 @@ export default function ThreadView({ conversationId }: { conversationId: string 
 
         {latestEscalation && (
           <div className="mt-3 rounded-md border border-line bg-accent-soft/60 px-3 py-2 text-xs text-ink-soft">
-            <span className="mr-1.5 rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white">
+            <span className="mr-1.5 rounded bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-white">
               {CATEGORY_LABELS[latestEscalation.category] ?? latestEscalation.category}
             </span>
             {latestEscalation.reason}
@@ -257,7 +258,9 @@ function MessageBubble({ message }: { message: Message }) {
               : "bg-accent-soft text-ink"
         }`}
       >
-        <div className="mb-0.5 text-[10px] uppercase tracking-wide opacity-60">
+        <div className="mb-0.5 flex items-center gap-1 text-[10px] uppercase tracking-wide opacity-60">
+          {message.sender_type === "bot" && <AiMarker className="h-2.5 w-2.5" />}
+          {isVet && <PersonMarker className="h-2.5 w-2.5" />}
           {label}
         </div>
         <div className="whitespace-pre-wrap">{message.body}</div>

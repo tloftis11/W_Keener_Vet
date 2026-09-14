@@ -81,6 +81,7 @@ export default function VetDashboardPage() {
   const router = useRouter();
   const { session, loading: sessionLoading } = useVetSession();
   const [tab, setTab] = useState<Tab>("waiting");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!sessionLoading && !session) router.push("/vet/login");
@@ -118,6 +119,15 @@ export default function VetDashboardPage() {
     };
   }, [session, mutate]);
 
+  const filteredRows = (rows ?? []).filter((row) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (row.customer_name ?? "").toLowerCase().includes(q) ||
+      (row.customer_contact ?? "").toLowerCase().includes(q)
+    );
+  });
+
   if (sessionLoading || !session) return null;
 
   return (
@@ -129,25 +139,34 @@ export default function VetDashboardPage() {
           Conversations waiting on a vet, urgent cases first.
         </p>
 
-        <div className="mb-5 flex rounded-full border border-line p-0.5 text-xs w-fit">
-          <button
-            onClick={() => setTab("waiting")}
-            aria-pressed={tab === "waiting"}
-            className={`rounded-full px-3 py-1.5 font-medium transition ${
-              tab === "waiting" ? "bg-accent text-white" : "text-ink-soft"
-            }`}
-          >
-            Waiting
-          </button>
-          <button
-            onClick={() => setTab("resolved")}
-            aria-pressed={tab === "resolved"}
-            className={`rounded-full px-3 py-1.5 font-medium transition ${
-              tab === "resolved" ? "bg-accent text-white" : "text-ink-soft"
-            }`}
-          >
-            Resolved
-          </button>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="flex rounded-full border border-line p-0.5 text-xs">
+            <button
+              onClick={() => setTab("waiting")}
+              aria-pressed={tab === "waiting"}
+              className={`rounded-full px-3 py-1.5 font-medium transition ${
+                tab === "waiting" ? "bg-accent text-white" : "text-ink-soft"
+              }`}
+            >
+              Waiting
+            </button>
+            <button
+              onClick={() => setTab("resolved")}
+              aria-pressed={tab === "resolved"}
+              className={`rounded-full px-3 py-1.5 font-medium transition ${
+                tab === "resolved" ? "bg-accent text-white" : "text-ink-soft"
+              }`}
+            >
+              Resolved
+            </button>
+          </div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or contact..."
+            aria-label="Search by name or contact"
+            className="w-56 rounded-md border border-line px-3 py-1.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+          />
         </div>
 
         {isLoading && <p className="text-sm text-ink-soft">Loading...</p>}
@@ -156,9 +175,12 @@ export default function VetDashboardPage() {
             {tab === "waiting" ? "Nothing waiting right now." : "No resolved conversations yet."}
           </p>
         )}
+        {!isLoading && (rows?.length ?? 0) > 0 && filteredRows.length === 0 && (
+          <p className="text-sm text-ink-soft">No conversations match &ldquo;{search}&rdquo;.</p>
+        )}
 
         <ul className="space-y-2">
-          {(rows ?? []).map((row) => {
+          {filteredRows.map((row) => {
             const awaitingVet =
               tab === "waiting" &&
               (row.lastMessageSenderType === "customer" ||
@@ -196,7 +218,7 @@ export default function VetDashboardPage() {
                       </p>
                     )}
                   </div>
-                  <span className="shrink-0 text-xs text-ink-faint">
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-ink-faint">
                     {tab === "waiting" ? "waiting" : "resolved"}{" "}
                     {formatRelativeTime(row.updated_at)}
                   </span>
