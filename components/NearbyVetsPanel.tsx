@@ -22,6 +22,7 @@ interface VetDetails {
   notes: string | null;
   sourceUrls: string[];
   usedWebSearch: boolean;
+  emergencyCareConfirmed: "yes" | "no" | "unclear" | null;
 }
 
 function kmToMiles(km: number): number {
@@ -53,7 +54,12 @@ export default function NearbyVetsPanel({
       const res = await fetch("/api/vet-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ placeId: vet.id, name: vet.name, address: vet.address }),
+        body: JSON.stringify({
+          placeId: vet.id,
+          name: vet.name,
+          address: vet.address,
+          isEmergency,
+        }),
       });
       if (!res.ok) throw new Error("Couldn't load more details for this clinic.");
       setDetail(await res.json());
@@ -119,6 +125,29 @@ export default function NearbyVetsPanel({
 
               {!detailLoading && detailError && (
                 <p className="mt-3 text-sm text-red-600">{detailError}</p>
+              )}
+
+              {!detailLoading && !detailError && detail && isEmergency && (
+                <>
+                  {detail.emergencyCareConfirmed === "yes" && (
+                    <div className="mt-3 rounded-md bg-accent-soft px-3 py-2 text-sm text-accent-dark">
+                      ✓ Confirmed to offer 24-hour or emergency care.
+                    </div>
+                  )}
+                  {detail.emergencyCareConfirmed === "no" && (
+                    <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+                      This location does not appear to offer emergency or after-hours
+                      care — call ahead or consider another option.
+                    </div>
+                  )}
+                  {(detail.emergencyCareConfirmed === "unclear" ||
+                    detail.emergencyCareConfirmed === null) && (
+                    <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      Emergency/24-hour availability isn&apos;t confirmed — call ahead
+                      before heading here.
+                    </div>
+                  )}
+                </>
               )}
 
               {!detailLoading && !detailError && detail && (

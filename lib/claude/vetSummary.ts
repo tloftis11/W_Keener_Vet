@@ -8,7 +8,7 @@ import type { WebSearchResult } from "../search/tavily";
 // owner, so the prompt is deliberately strict: only what's stated in the
 // provided text, "not listed" otherwise, and bail out entirely if the
 // search results don't clearly seem to be about this exact business.
-const SYSTEM_PROMPT = `You extract factual information about ONE specific business from web \
+const BASE_SYSTEM_PROMPT = `You extract factual information about ONE specific business from web \
 search results. You are not answering a question — you are strictly summarizing what is \
 already written in the provided search results about this exact business.
 
@@ -23,6 +23,14 @@ name, or you can't tell), set "confident" to false and leave every field null.
 - Keep "notes" to one short factual sentence, or null if there's nothing worth adding \
 beyond phone/hours/website.`;
 
+const EMERGENCY_ADDENDUM = `\n\nThis lookup is for a potential pet emergency, so also determine \
+"emergencyCareConfirmed": set it to "yes" only if the search results explicitly state this \
+location offers 24-hour, after-hours, or emergency veterinary care; set it to "no" if they \
+explicitly state the opposite (e.g. daytime-only hours, "we are not an emergency facility", \
+or they explicitly refer customers elsewhere for emergencies); otherwise set it to "unclear". \
+Do not infer this from the business name or category alone — only from what the text actually \
+says.`;
+
 export interface VetSummaryResult {
   confident: boolean;
   phone: string | null;
@@ -30,15 +38,24 @@ export interface VetSummaryResult {
   hours: string | null;
   notes: string | null;
   sourceUrls: string[];
+  emergencyCareConfirmed: "yes" | "no" | "unclear" | null;
 }
 
 export async function summarizeVetInfo(
   business: { name: string; address: string | null },
-  searchResults: WebSearchResult[]
+  searchResults: WebSearchResult[],
+  opts: { isEmergency?: boolean } = {}
 ): Promise<VetSummaryResult> {
-  if (searchResults.length === 0) {
-    return { confident: false, phone: null, website: null, hours: null, notes: null, sourceUrls: [] };
-  }
+  const empty: VetSummaryResult = {
+    confident: false,
+    phone: null,
+    website: null,
+    hours: null,
+    notes: null,
+    sourceUrls: [],
+    emergencyCareConfirmed: null,
+  };
+  if (searchResults.length === 0) return empty;
 
   const client = getAnthropicClient();
 
@@ -51,10 +68,14 @@ export async function summarizeVetInfo(
 Search results:
 ${sourcesText}`;
 
+  const systemPrompt = opts.isEmergency
+    ? BASE_SYSTEM_PROMPT + EMERGENCY_ADDENDUM
+    : BASE_SYSTEM_PROMPT;
+
   const response = await client.messages.create({
     model: getVetSummaryModel(),
     max_tokens: 512,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
     tools: [
       {
@@ -71,13 +92,26 @@ ${sourcesText}`;
             website: { type: "string", description: "Empty string if not stated." },
             hours: { type: "string", description: "Empty string if not stated." },
             notes: { type: "string", description: "Empty string if nothing worth adding." },
+            emergencyCareConfirmed: {
+              type: "string",
+              enum: ["yes", "no", "unclear"],
+              description: "Only meaningful when asked about explicitly — see instructions.",
+            },
             sourceIndexes: {
               type: "array",
               items: { type: "number" },
               description: "Which [n] sources (1-indexed) the extracted facts came from.",
             },
           },
-          required: ["confident", "phone", "website", "hours", "notes", "sourceIndexes"],
+          required: [
+            "confident",
+            "phone",
+            "website",
+            "hours",
+            "notes",
+            "emergencyCareConfirmed",
+            "sourceIndexes",
+          ],
         },
       },
     ],
@@ -87,9 +121,7 @@ ${sourcesText}`;
   const toolUse = response.content.find(
     (block): block is Extract<typeof block, { type: "tool_use" }> => block.type === "tool_use"
   );
-  if (!toolUse) {
-    return { confident: false, phone: null, website: null, hours: null, notes: null, sourceUrls: [] };
-  }
+  if (!toolUse) return empty;
 
   const input = toolUse.input as {
     confident?: boolean;
@@ -97,12 +129,11 @@ ${sourcesText}`;
     website?: string;
     hours?: string;
     notes?: string;
+    emergencyCareConfirmed?: "yes" | "no" | "unclear";
     sourceIndexes?: number[];
   };
 
-  if (!input.confident) {
-    return { confident: false, phone: null, website: null, hours: null, notes: null, sourceUrls: [] };
-  }
+  if (!input.confident) return empty;
 
   const sourceUrls = (input.sourceIndexes ?? [])
     .map((i) => searchResults[i - 1]?.url)
@@ -115,5 +146,6 @@ ${sourcesText}`;
     hours: input.hours || null,
     notes: input.notes || null,
     sourceUrls,
+    emergencyCareConfirmed: opts.isEmergency ? (input.emergencyCareConfirmed ?? "unclear") : null,
   };
 }
