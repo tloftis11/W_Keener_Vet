@@ -21,7 +21,8 @@ that field null — never guess or infer.
 - If the search results appear to be about a different business (wrong location, wrong \
 name, or you can't tell), set "confident" to false and leave every field null.
 - Keep "notes" to one short factual sentence, or null if there's nothing worth adding \
-beyond phone/hours/website.`;
+beyond phone/hours/website.
+- Write "notes" in plain, direct language, no em dashes.`;
 
 const EMERGENCY_ADDENDUM = `\n\nThis lookup is for a potential pet emergency, so also determine \
 "emergencyCareConfirmed": set it to "yes" only if the search results explicitly state this \

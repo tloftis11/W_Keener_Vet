@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const geocoded = await geocode(query.trim());
     if (!geocoded) {
       return NextResponse.json(
-        { error: "Couldn't find that location — try a city name or zip code." },
+        { error: "Couldn't find that location. Try a city name or zip code." },
         { status: 422 }
       );
     }

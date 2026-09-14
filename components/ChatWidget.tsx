@@ -217,7 +217,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: contactName.trim(), contact: contactValue.trim() }),
       });
-      if (!res.ok) throw new Error("Couldn't save your contact info — try again?");
+      if (!res.ok) throw new Error("Couldn't save your contact info. Try again?");
       await mutate();
     } catch (err) {
       setContactError(err instanceof Error ? err.message : "Something went wrong");
@@ -234,7 +234,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
         <header className="border-b border-line pb-3">
           <h1 className="font-display text-xl text-ink">Ask Us About Your Pet</h1>
           <p className="text-sm text-ink-soft">
-            Describe what&apos;s going on — we&apos;ll help where we can, and loop in a vet
+            Tell us what&apos;s going on. We&apos;ll help where we can, and bring in a vet
             for anything that needs their judgment.
           </p>
         </header>
@@ -283,7 +283,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
             <strong className="font-medium text-ink">Detailed</strong> gives fuller
             explanations and asks follow-up questions.{" "}
             <strong className="font-medium text-ink">Simple</strong> keeps answers short
-            and plain — good if longer responses are hard to read.
+            and plain. Good if longer responses are hard to read.
           </p>
         )}
       </div>
@@ -291,7 +291,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
       {status === "escalated" &&
         (urgency === "urgent" ? (
           <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
-            <span className="font-semibold">This has been flagged as urgent</span> — a vet
+            <span className="font-semibold">This has been flagged as urgent.</span> A vet
             has been notified right away and will reply here as soon as possible. If things
             seem to be getting worse, please call us or head to your nearest emergency vet.
           </div>
@@ -304,7 +304,8 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
 
       {status === "escalated" && (
         <p className="mt-1.5 text-[11px] text-ink-faint">
-          This conversation is saved at this page&apos;s link — bookmark it to come back.
+          This conversation is saved at this page&apos;s link. Bookmark it if you want to
+          come back.
         </p>
       )}
 
@@ -381,7 +382,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
                 Assistant
               </div>
               Hi! Tell me what&apos;s going on with your pet, or ask about hours, services,
-              or anything else — I&apos;m happy to help.
+              or anything else. Happy to help.
             </div>
           </div>
         )}

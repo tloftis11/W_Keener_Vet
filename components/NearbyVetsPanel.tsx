@@ -137,13 +137,13 @@ export default function NearbyVetsPanel({
                   {detail.emergencyCareConfirmed === "no" && (
                     <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
                       This location does not appear to offer emergency or after-hours
-                      care — call ahead or consider another option.
+                      care. Call ahead or consider another option.
                     </div>
                   )}
                   {(detail.emergencyCareConfirmed === "unclear" ||
                     detail.emergencyCareConfirmed === null) && (
                     <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                      Emergency/24-hour availability isn&apos;t confirmed — call ahead
+                      Emergency or 24-hour availability isn&apos;t confirmed. Call ahead
                       before heading here.
                     </div>
                   )}
@@ -288,7 +288,7 @@ export default function NearbyVetsPanel({
         </div>
 
         <p className="border-t border-line pt-3 text-[11px] italic text-ink-faint">
-          From public map data (OpenStreetMap) — please call ahead to confirm hours and
+          From public map data (OpenStreetMap). Please call ahead to confirm hours and
           availability.
         </p>
       </div>

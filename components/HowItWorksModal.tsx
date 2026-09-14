@@ -23,7 +23,7 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-4 pt-4 text-sm text-ink-soft">
           <p>
             <strong className="font-medium text-ink">
-              VetAI is a demo — it&apos;s not real veterinary medicine.
+              VetAI is a demo. It&apos;s not real veterinary medicine.
             </strong>{" "}
             Nothing here should be used to make actual decisions about a pet&apos;s health.
           </p>
@@ -31,9 +31,9 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
           <div>
             <p className="font-medium text-ink">What it answers directly</p>
             <p>
-              General pet-care and symptom questions, clinic-style logistics — it engages
-              rather than deflecting, and asks follow-up questions when it needs more
-              information.
+              General pet-care and symptom questions, plus clinic-style logistics. It
+              answers directly instead of deflecting, and asks follow-up questions when
+              it needs more information.
             </p>
           </div>
 
@@ -42,29 +42,29 @@ export default function HowItWorksModal({ onClose }: { onClose: () => void }) {
             <p>
               Anything involving <strong className="text-ink">medication or dosing</strong>,{" "}
               <strong className="text-ink">procedures</strong>, or a possible{" "}
-              <strong className="text-ink">emergency</strong> — those are flagged by a
-              separate classifier step, not decided by the same model that&apos;s
-              chatting with you. Medication/procedure conversations stop there and wait
-              for a vet; emergencies still get an immediate, practical response while
-              also being flagged.
+              <strong className="text-ink">emergency</strong>. Those are flagged by a
+              separate step, not decided by the same model that&apos;s chatting with you.
+              Medication and procedure conversations stop there and wait for a vet.
+              Emergencies still get an immediate, practical response while also being
+              flagged.
             </p>
           </div>
 
           <div>
             <p className="font-medium text-ink">Nearby vet clinics</p>
             <p>
-              When something is flagged, the app also looks up real nearby clinics (and,
-              for emergencies, tries to confirm whether they actually offer 24-hour
-              care) — sourced live from public map data and, when needed, a grounded web
-              search, never invented by the model.
+              When something is flagged, the app also looks up real nearby clinics. For
+              emergencies, it tries to confirm whether they actually offer 24-hour care.
+              This comes from public map data and, when needed, a real web search. It is
+              never invented by the model.
             </p>
           </div>
 
           <div>
             <p className="font-medium text-ink">Reply style</p>
             <p>
-              Detailed gives fuller explanations; Simple keeps answers short and plain —
-              switch anytime above the chat.
+              Detailed gives fuller explanations. Simple keeps answers short and plain.
+              Switch anytime above the chat.
             </p>
           </div>
         </div>

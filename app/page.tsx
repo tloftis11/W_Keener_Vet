@@ -1,16 +1,14 @@
 import ChatWidget from "@/components/ChatWidget";
-import PawMark from "@/components/PawMark";
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-line bg-surface">
         <div className="flex items-center gap-2 px-4 py-4 sm:px-6">
-          <PawMark className="h-6 w-6 shrink-0 text-accent" />
           <div>
             <span className="font-display text-lg font-semibold text-ink">VetAI</span>
             <span className="ml-2 text-xs text-ink-faint">
-              Demo — not real veterinary medicine
+              Demo. Not real veterinary medicine.
             </span>
           </div>
         </div>

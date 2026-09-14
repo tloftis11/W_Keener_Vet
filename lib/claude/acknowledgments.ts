@@ -5,9 +5,9 @@
 // EMERGENCY_FOLLOW_UP_NOTE below).
 const HARD_GATE_TEMPLATES: Record<"medication" | "procedure", string> = {
   medication:
-    "Since this involves specific medication or dosing, I've sent it to one of our vets to review — they'll reply here as soon as they can. Feel free to add any more details in the meantime.",
+    "Since this involves specific medication or dosing, I've sent it to one of our vets to review. They'll reply here as soon as they can. Feel free to add more details in the meantime.",
   procedure:
-    "Questions about procedures need to come from one of our vets directly, so I've sent this to them — they'll respond here as soon as they can.",
+    "Questions about procedures need to come from one of our vets directly, so I've sent this to them. They'll respond here as soon as they can.",
 };
 
 export function getHardGateMessage(category: "medication" | "procedure"): string {
@@ -15,4 +15,4 @@ export function getHardGateMessage(category: "medication" | "procedure"): string
 }
 
 export const EMERGENCY_FOLLOW_UP_NOTE =
-  "I've also flagged this for one of our vets right away — they'll follow up here as soon as they can.";
+  "I've also flagged this for one of our vets right away. They'll follow up here as soon as they can.";

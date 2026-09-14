@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getBrowserClient } from "@/lib/supabase/client";
-import PawMark from "@/components/PawMark";
 
 export default function VetLoginPage() {
   const router = useRouter();
@@ -31,7 +30,6 @@ export default function VetLoginPage() {
   return (
     <div className="mx-auto flex h-screen w-full max-w-sm flex-col justify-center p-4">
       <div className="mb-6 flex items-center justify-center gap-2">
-        <PawMark className="h-6 w-6 text-accent" />
         <span className="font-display text-lg font-semibold text-ink">VetAI</span>
       </div>
       <h1 className="mb-4 text-center font-display text-xl text-ink">Vet Sign In</h1>

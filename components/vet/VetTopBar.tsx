@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import PawMark from "@/components/PawMark";
 import { getBrowserClient } from "@/lib/supabase/client";
 
 export default function VetTopBar() {
@@ -16,7 +15,6 @@ export default function VetTopBar() {
   return (
     <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 sm:px-6">
       <Link href="/vet/dashboard" className="flex items-center gap-2">
-        <PawMark className="h-5 w-5 text-accent" />
         <span className="font-display text-base font-semibold text-ink">VetAI</span>
       </Link>
       <button

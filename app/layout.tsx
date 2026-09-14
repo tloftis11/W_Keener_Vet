@@ -23,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "VetAI",
-  description: "Demo veterinary triage chatbot — not real veterinary medicine.",
+  description: "Demo veterinary triage chatbot. Not real veterinary medicine.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
