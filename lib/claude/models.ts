@@ -10,3 +10,9 @@ export function getClassifierModel(): string {
 export function getChatModel(): string {
   return process.env.CHAT_MODEL || "claude-opus-5";
 }
+
+// Narrow extraction task (summarize search results about one specific
+// business) — same fast/cheap profile as the classifier.
+export function getVetSummaryModel(): string {
+  return process.env.VET_SUMMARY_MODEL || "claude-haiku-4-5-20251001";
+}

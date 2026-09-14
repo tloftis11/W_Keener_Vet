@@ -22,3 +22,7 @@ services:
         sync: false
       - key: GEOAPIFY_PLACES_API_KEY
         sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: VET_SUMMARY_MODEL
+        value: claude-haiku-4-5-20251001

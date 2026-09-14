@@ -148,3 +148,50 @@ export async function searchNearbyVets(
 
   return results.slice(0, limit);
 }
+
+export interface PlaceDetails {
+  phone: string | null;
+  website: string | null;
+  hours: string | null;
+  description: string | null;
+}
+
+// Richer per-place lookup, called only when the customer clicks into a
+// specific result — same underlying OSM data as the list search, but with
+// more of the tagged fields exposed (contact/website/hours), when present.
+export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
+  const empty: PlaceDetails = { phone: null, website: null, hours: null, description: null };
+
+  const url = new URL(`${API_BASE}/v2/place-details`);
+  url.searchParams.set("id", placeId);
+  url.searchParams.set("features", "details");
+  url.searchParams.set("apiKey", getPlacesApiKey());
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
+  } catch {
+    return empty;
+  }
+  if (!res.ok) return empty;
+
+  const data = (await res.json()) as {
+    features?: Array<{
+      properties: {
+        contact?: { phone?: string };
+        website?: string;
+        opening_hours?: string;
+        description?: string;
+      };
+    }>;
+  };
+  const props = data.features?.[0]?.properties;
+  if (!props) return empty;
+
+  return {
+    phone: props.contact?.phone ?? null,
+    website: props.website ?? null,
+    hours: props.opening_hours ?? null,
+    description: props.description ?? null,
+  };
+}
