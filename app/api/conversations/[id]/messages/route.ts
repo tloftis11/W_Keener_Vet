@@ -202,6 +202,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
   }
 
+  // Lets the customer widget decide whether this escalation warrants the
+  // nearby-vets lookup (medication/procedure/emergency) without re-deriving
+  // it from the conversation transcript.
+  const { data: latestEscalation } = await supabase
+    .from("escalation_events")
+    .select("category")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   let query = supabase
     .from("messages")
     .select("*")
@@ -224,5 +235,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     urgency: conversation.urgency,
     customerName: conversation.customer_name,
     customerContact: conversation.customer_contact,
+    escalationCategory: latestEscalation?.category ?? null,
   });
 }

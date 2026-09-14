@@ -7,8 +7,11 @@ import remarkGfm from "remark-gfm";
 import type { Message } from "@/lib/supabase/types";
 import { DEFAULT_RESPONSE_MODE, type ResponseMode } from "@/lib/claude/mode";
 import AutoGrowTextarea from "@/components/AutoGrowTextarea";
+import NearbyVetsPanel from "@/components/NearbyVetsPanel";
+import type { VetResult } from "@/lib/geo/geoapify";
 
 const POLL_INTERVAL_MS = 4000;
+const NEARBY_VET_CATEGORIES = new Set(["medication", "procedure", "emergency"]);
 
 interface MessagesResponse {
   messages: Message[];
@@ -16,6 +19,7 @@ interface MessagesResponse {
   urgency: "routine" | "urgent" | null;
   customerName: string | null;
   customerContact: string | null;
+  escalationCategory: string | null;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -41,6 +45,18 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   const [contactSaving, setContactSaving] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
 
+  const [nearbyPanelOpen, setNearbyPanelOpen] = useState(false);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
+  const [nearbyResults, setNearbyResults] = useState<VetResult[] | null>(null);
+  const [nearbyIsEmergency, setNearbyIsEmergency] = useState(false);
+  const [needsLocation, setNeedsLocation] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  // Tracks the status seen on the previous render so a lookup triggers once
+  // per new escalation (status transitioning into "escalated"), not on every
+  // poll while it stays escalated.
+  const prevStatusRef = useRef<string | null>(null);
+
   const { data, mutate } = useSWR<MessagesResponse>(
     conversationId ? `/api/conversations/${conversationId}/messages` : null,
     fetcher,
@@ -54,6 +70,7 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   const messages = data?.messages ?? [];
   const status = data?.status ?? "active";
   const urgency = data?.urgency ?? null;
+  const escalationCategory = data?.escalationCategory ?? null;
   const needsContact = status === "escalated" && !data?.customerContact && !contactDismissed;
 
   // The server saves the customer's message immediately, well before the
@@ -70,6 +87,69 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, pendingText]);
+
+  async function fetchNearby(params: { lat: number; lon: number } | { query: string }, isEmergency: boolean) {
+    setNeedsLocation(false);
+    setNearbyLoading(true);
+    setNearbyError(null);
+    try {
+      const res = await fetch("/api/nearby-vets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...params, isEmergency }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Couldn't look up nearby vets");
+      setNearbyResults(json.results);
+    } catch (err) {
+      setNearbyError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setNearbyLoading(false);
+    }
+  }
+
+  function triggerNearbyLookup(isEmergency: boolean) {
+    setNearbyIsEmergency(isEmergency);
+    setNearbyPanelOpen(true);
+    setNearbyResults(null);
+    setNearbyError(null);
+
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setNeedsLocation(true);
+      return;
+    }
+
+    setNearbyLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => fetchNearby({ lat: pos.coords.latitude, lon: pos.coords.longitude }, isEmergency),
+      () => {
+        setNearbyLoading(false);
+        setNeedsLocation(true);
+      },
+      { timeout: 8000 }
+    );
+  }
+
+  function handleLocationSubmit() {
+    if (!locationQuery.trim()) return;
+    fetchNearby({ query: locationQuery.trim() }, nearbyIsEmergency);
+  }
+
+  // Fires once per new escalation (status transitioning into "escalated"),
+  // not on every poll while it stays escalated.
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = status;
+    if (
+      prevStatus !== "escalated" &&
+      status === "escalated" &&
+      escalationCategory &&
+      NEARBY_VET_CATEGORIES.has(escalationCategory)
+    ) {
+      triggerNearbyLookup(escalationCategory === "emergency");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, escalationCategory]);
 
   async function handleSend() {
     const text = input.trim();
@@ -183,6 +263,18 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
           </div>
         ))}
 
+      {status === "escalated" &&
+        escalationCategory &&
+        NEARBY_VET_CATEGORIES.has(escalationCategory) &&
+        !nearbyPanelOpen && (
+          <button
+            onClick={() => setNearbyPanelOpen(true)}
+            className="mt-2 self-start text-xs text-accent hover:underline"
+          >
+            {escalationCategory === "emergency" ? "View nearest emergency vets" : "View nearby vet clinics"}
+          </button>
+        )}
+
       {status === "resolved" && (
         <div className="mt-3 rounded-md border border-line bg-accent-soft px-3 py-2 text-sm text-accent-dark">
           This conversation was marked resolved. Send a message below if you have a new
@@ -289,6 +381,20 @@ export default function ChatWidget({ showHeader = true }: { showHeader?: boolean
           Send
         </button>
       </div>
+
+      {nearbyPanelOpen && (
+        <NearbyVetsPanel
+          onClose={() => setNearbyPanelOpen(false)}
+          loading={nearbyLoading}
+          error={nearbyError}
+          results={nearbyResults}
+          isEmergency={nearbyIsEmergency}
+          needsLocation={needsLocation}
+          locationValue={locationQuery}
+          onLocationChange={setLocationQuery}
+          onLocationSubmit={handleLocationSubmit}
+        />
+      )}
     </div>
   );
 }
