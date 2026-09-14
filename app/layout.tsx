@@ -16,8 +16,8 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "W. Keener Veterinary",
-  description: "Compassionate veterinary care in Springdale — chat with us anytime.",
+  title: "VetAI",
+  description: "Demo veterinary triage chatbot — not real veterinary medicine.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -17,9 +17,7 @@ export default function VetTopBar() {
     <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 sm:px-6">
       <Link href="/vet/dashboard" className="flex items-center gap-2">
         <PawMark className="h-5 w-5 text-accent" />
-        <span className="font-display text-base font-semibold text-ink">
-          W. Keener Veterinary
-        </span>
+        <span className="font-display text-base font-semibold text-ink">VetAI</span>
       </Link>
       <button
         onClick={handleSignOut}

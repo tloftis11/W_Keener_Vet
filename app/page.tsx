@@ -7,9 +7,12 @@ export default function HomePage() {
       <header className="border-b border-line bg-surface">
         <div className="flex items-center gap-2 px-4 py-4 sm:px-6">
           <PawMark className="h-6 w-6 shrink-0 text-accent" />
-          <span className="font-display text-lg font-semibold text-ink">
-            W. Keener Veterinary
-          </span>
+          <div>
+            <span className="font-display text-lg font-semibold text-ink">VetAI</span>
+            <span className="ml-2 text-xs text-ink-faint">
+              Demo — not real veterinary medicine
+            </span>
+          </div>
         </div>
       </header>
 
